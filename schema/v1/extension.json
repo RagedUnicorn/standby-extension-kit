@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/RagedUnicorn/standby-extension-kit/master/schema/v1/extension.json",
+  "title": "Standby element extension",
+  "description": "The manifest of an element extension: a folder (and a repository) with elements/<category>/<id>.json, boards/<id>.json and the assets/2d/*.svg and assets/3d/*.glb its elements are drawn from. A release publishes it as <id>-<version>.zip with this file at its root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "id", "names", "version", "standby", "disciplines"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "format": { "description": "The extension format; this schema describes 1.", "enum": [1] },
+    "id": {
+      "description": "The extension's id, such as common or cma; a new extension's element ids start with it.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*$"
+    },
+    "names": { "$ref": "#/$defs/names" },
+    "version": {
+      "description": "Its version, x.y.z; a release is tagged vx.y.z.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "standby": {
+      "description": "The oldest Standby version it works with, x.y.z.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "repository": {
+      "description": "Its GitHub repository, owner/name, where updates come from.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$"
+    },
+    "licence": { "description": "Its licence, such as MIT.", "type": "string" },
+    "disciplines": {
+      "description": "The disciplines its elements are for.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/discipline" }
+    },
+    "stageDefaults": {
+      "description": "What a discipline's stages use where nothing else says: the board movers and targets made in the app take, and the target a bullet trap carries.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cma": { "$ref": "#/$defs/stageDefaults" },
+        "idpa": { "$ref": "#/$defs/stageDefaults" },
+        "ipsc": { "$ref": "#/$defs/stageDefaults" },
+        "uspsa": { "$ref": "#/$defs/stageDefaults" },
+        "drill": { "$ref": "#/$defs/stageDefaults" }
+      }
+    },
+    "aliases": {
+      "description": "Older element ids and the element of this extension they now resolve to.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9]*\\.[a-z0-9-]+$" }
+    },
+    "order": {
+      "description": "The order its elements are listed in within a palette category; others follow by id.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*\\.[a-z0-9-]+$" }
+    }
+  },
+  "$defs": {
+    "names": {
+      "description": "The name in each UI language.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en", "de", "fr"],
+      "properties": {
+        "en": { "type": "string", "minLength": 1 },
+        "de": { "type": "string", "minLength": 1 },
+        "fr": { "type": "string", "minLength": 1 }
+      }
+    },
+    "discipline": { "enum": ["cma", "idpa", "ipsc", "uspsa", "drill"] },
+    "stageDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "board": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "trapTarget": { "type": "string", "pattern": "^[a-z][a-z0-9]*\\.[a-z0-9-]+$" }
+      }
+    }
+  }
+}

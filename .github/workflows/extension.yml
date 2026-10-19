@@ -1,0 +1,96 @@
+# The CI of a Standby element extension (https://github.com/RagedUnicorn/standby-extension-kit). Every push and
+# pull request is checked as Standby checks it. A pull request from a branch of the repository gets a preview of
+# its viewer at <pages>/pr-<number>/, with what it changes before and after, removed when it closes. A tag vX.Y.Z
+# (the version in extension.json) releases <id>-X.Y.Z.zip, which Standby installs, and publishes the viewer.
+name: Standby extension
+
+on:
+  workflow_call:
+    inputs:
+      kit-version:
+        description: The kit release to use, such as 0.1.0; the newest when empty.
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  extension:
+    name: Check, preview and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.number }}
+      SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      CLOSED: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: head
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Get the kit
+        run: |
+          gh release download ${{ inputs.kit-version != '' && format('v{0}', inputs.kit-version) || '' }} \
+            --repo RagedUnicorn/standby-extension-kit --pattern 'standby-extension-kit-*.tgz' --dir kit
+          npm install --global ./kit/standby-extension-kit-*.tgz
+      - name: Check the extension
+        if: env.CLOSED != 'true'
+        run: standby-extension validate head
+
+      - name: Get the version the pull request changes
+        if: github.event_name == 'pull_request' && env.CLOSED != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - name: Build the preview
+        if: github.event_name == 'pull_request' && env.CLOSED != 'true'
+        run: standby-extension site head --base base --out preview
+      - name: Publish the preview
+        if: github.event_name == 'pull_request' && env.CLOSED != 'true' && env.SAME_REPO == 'true'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: preview
+          branch: gh-pages
+          target-folder: pr-${{ github.event.number }}
+      - name: Link the preview
+        if: github.event_name == 'pull_request' && env.CLOSED != 'true' && env.SAME_REPO == 'true'
+        run: |
+          url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-$PR/#/compare"
+          body="The viewer of this pull request, with each changed element before and after in 2D and 3D: $url"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" ||
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
+      - name: Remove the preview
+        if: env.CLOSED == 'true' && env.SAME_REPO == 'true'
+        run: |
+          git clone --quiet --depth 1 --branch gh-pages \
+            "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" pages || exit 0
+          cd pages
+          [ -d "pr-$PR" ] || exit 0
+          git rm -r --quiet "pr-$PR"
+          git -c user.name=github-actions -c user.email=github-actions@github.com commit --quiet -m "chore: remove the preview of #$PR"
+          git push --quiet
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(node -p "require('./head/extension.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not the version in extension.json ($version)."
+            exit 1
+          fi
+          standby-extension pack head --out dist
+          gh release create "$GITHUB_REF_NAME" dist/*.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          standby-extension site head --out site
+      - name: Publish the viewer
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: site
+          branch: gh-pages
+          clean-exclude: pr-*

@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/RagedUnicorn/standby-extension-kit/master/schema/v1/element.json",
+  "title": "Standby element",
+  "description": "One element type that stands on the plan: a target, steel, mover, activator or prop. In an element extension the file is elements/<category>/<id>.json; an element drawn from files (art.kind \"asset\") has its drawing in assets/2d/<id>.svg and its model in assets/3d/<id>.glb.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "names", "category", "family", "disciplines", "labelFamily", "count", "art", "physical"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "description": "The symbol id stored on placed elements, equal to the file name; never change it once stages use it (add an alias instead). A new extension's ids start with its own id.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*\\.[a-z0-9-]+$"
+    },
+    "names": { "$ref": "#/$defs/names" },
+    "category": {
+      "description": "The palette category, equal to the folder.",
+      "enum": ["targets", "steel", "movers", "activators", "props"]
+    },
+    "family": {
+      "description": "Counted families (target, steel, mover) are placed as targets, the rest as props.",
+      "enum": ["target", "steel", "mover", "activator", "prop"]
+    },
+    "disciplines": {
+      "description": "The disciplines whose palette shows the element.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/discipline" }
+    },
+    "labelFamily": {
+      "description": "Label prefix (T, S, A, B, Table), or null for unlabelled elements such as no-shoots.",
+      "type": ["string", "null"]
+    },
+    "count": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class"],
+      "properties": {
+        "class": { "enum": ["paper", "half", "steel", "noshoot", "none"] },
+        "boards": {
+          "description": "Boards counted per element (a flipper carries two).",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "art": {
+      "description": "How the plan and the 3D view draw the element: from its files (asset), or by one of Standby's builders, which move, carry other targets or take hits.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "asset: drawn from assets/2d/<id>.svg and assets/3d/<id>.glb. board, trap, popper, plate, swinger, updown, turner, flipper: Standby's builders, fed by this file and the boards. box and cylinder: elements made in the app, drawn at their real size in their own colour.",
+          "enum": [
+            "asset",
+            "board",
+            "trap",
+            "popper",
+            "plate",
+            "swinger",
+            "updown",
+            "turner",
+            "flipper",
+            "box",
+            "cylinder"
+          ]
+        },
+        "foot": {
+          "description": "asset: the foot point in the SVG's units, where it is not the bottom centre of its viewBox.",
+          "$ref": "#/$defs/point"
+        },
+        "labelY": {
+          "description": "asset: how far above (negative) the foot point the label sits, mm at miniature scale 1; the middle of the drawing when not given.",
+          "type": "number"
+        },
+        "board": {
+          "description": "The board (boards/<id>.json of any extension) a board target is drawn on.",
+          "$ref": "#/$defs/boardId"
+        },
+        "half": { "description": "Drawn at half size on its board (the CMA 50 % target).", "type": "boolean" },
+        "backer": { "description": "On a white backer.", "type": "boolean" },
+        "white": { "description": "Drawn in the no-shoot colours (how older no-shoots said so).", "type": "boolean" },
+        "noShoot": { "description": "A no-shoot, with its board's mark.", "enum": ["x", "hands", "x-bars"] },
+        "paint": {
+          "description": "The default painted hard cover: one of the board's covers and of the variants.",
+          "type": "string"
+        },
+        "cover": {
+          "description": "The default hard-cover side: one of the board's covers and of the variants.",
+          "type": "string"
+        },
+        "boardCover": {
+          "description": "flipper: the hard cover its boards show, by board id.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "square": { "description": "plate: a square plate instead of a round one.", "type": "boolean" },
+        "scale": {
+          "description": "popper: how much smaller it is drawn on the plan (the mini popper).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "color": { "description": "box, cylinder: its colour.", "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "target": {
+          "description": "trap: the target it carries where neither the placed trap nor the stage's discipline names one.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*\\.[a-z0-9-]+$"
+        }
+      }
+    },
+    "variants": {
+      "description": "Selectable art variants, stored on the element as `variant`.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+    },
+    "variantNames": {
+      "description": "The name of each variant.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/names" }
+    },
+    "views": {
+      "description": "Upright drawings for the ways the element can stand on the plan, such as a table across or along the range: it is drawn in the view its rotation is nearest to instead of turning one picture, and choosing a view in Properties sets the view's first rotation. Its rotation still turns it in 3D, for sight lines and for walking. The first view is drawn from assets/2d/<id>.svg, the others from assets/2d/<id>--<view>.svg.",
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rotations", "names"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "rotations": {
+            "description": "The rotations it is drawn for, quarter turns in degrees; the first is the one choosing it sets.",
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": [0, 90, 180, 270] }
+          },
+          "names": { "$ref": "#/$defs/names" }
+        }
+      }
+    },
+    "physical": {
+      "description": "Real size in mm.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "depth": {
+          "description": "The depth front to back where it differs from the width (a box, a bullet trap, an ammo can); its width when not given.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "mount": {
+      "description": "How high a target's face starts above the ground, mm: a popper 0, a plate 900; boards 800 when not given.",
+      "type": "number",
+      "minimum": 0
+    },
+    "blocks": {
+      "description": "Hides what is behind it in sight lines: a block as wide as the element, `depth` front to back, up to `height` (its own height when not given).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["depth"],
+      "properties": {
+        "depth": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "footprint": {
+      "description": "A shooter walks round it in a run: a block as wide as the element and `depth` front to back. Without one it is stepped over or on.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["depth"],
+      "properties": {
+        "depth": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "surfaces": {
+      "description": "Where something can be put down on it, such as a gun on a table: each a height and a rectangle [x1, y1, x2, y2] or a circle [x, y, r] in its own frame, mm, x to the right as the shooter sees it and y toward him; the highest one a point lies on counts.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["top"],
+        "properties": {
+          "top": { "type": "number", "minimum": 0 },
+          "rect": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } },
+          "circle": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } }
+        },
+        "oneOf": [{ "required": ["rect"] }, { "required": ["circle"] }]
+      }
+    },
+    "onSurface": {
+      "description": "Put down where a prop has a surface, it lies on its top in 3D, as a gun on a table does.",
+      "type": "boolean"
+    },
+    "activation": {
+      "description": "How a shooter works an activator: steps on it (a pedal, a bear trap), pulls it, or presses it by hand (a push button). Its model's moving part is the node named `press`.",
+      "enum": ["step", "pull", "press"]
+    },
+    "press": {
+      "description": "A push button: how high the middle of its face is above the ground and how far in front of its axis, mm.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["height", "front"],
+      "properties": {
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "front": { "type": "number", "minimum": 0 }
+      }
+    },
+    "carry": {
+      "description": "A prop the shooter carries or drags on the clock, such as a kettlebell or a rescue dummy: with how many hands, and whether it is carried off the ground or dragged along it. The round planner and the walkthrough use it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hands", "mode"],
+      "properties": {
+        "hands": { "description": "The hands it takes.", "enum": [1, 2] },
+        "mode": { "description": "Carried off the ground, or dragged along it.", "enum": ["carry", "drag"] }
+      }
+    },
+    "weight": {
+      "description": "The weight in kg a placed one starts with, for women and for men, such as a kettlebell's; Properties sets it per element. One value alone is the weight for everyone.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "women": { "type": "number", "exclusiveMinimum": 0 },
+        "men": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "names": {
+      "description": "The name in each UI language.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en", "de", "fr"],
+      "properties": {
+        "en": { "type": "string", "minLength": 1 },
+        "de": { "type": "string", "minLength": 1 },
+        "fr": { "type": "string", "minLength": 1 }
+      }
+    },
+    "discipline": { "enum": ["cma", "idpa", "ipsc", "uspsa", "drill"] },
+    "boardId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "point": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+  }
+}

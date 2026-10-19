@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/RagedUnicorn/standby-extension-kit/master/schema/v1/board.json",
+  "title": "Standby board",
+  "description": "A target board: its true outline, its hard-cover lines and the mark a no-shoot on it carries. In an element extension the file is boards/<id>.json; board targets name it in art.board, and the plan and the 3D view draw it at its real size. Points are mm, origin top left, y down.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "discipline", "width", "height", "outline"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "description": "The board id, equal to the file name, such as cma or cma-cut.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "discipline": {
+      "description": "Whose target colours it takes (the symbol theme's per-discipline table).",
+      "enum": ["cma", "idpa", "ipsc", "uspsa", "drill"]
+    },
+    "width": { "description": "Its width, mm.", "type": "number", "exclusiveMinimum": 0 },
+    "height": { "description": "Its height, mm.", "type": "number", "exclusiveMinimum": 0 },
+    "outline": {
+      "description": "The outline, mm, top left origin, y down.",
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/point" }
+    },
+    "covers": {
+      "description": "Hard cover by variant tag (an element's paint or cover): the part of the board on the side of the line a to b that `keep` is on, by default the far side (larger y).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["a", "b"],
+        "properties": {
+          "a": { "$ref": "#/$defs/point" },
+          "b": { "$ref": "#/$defs/point" },
+          "keep": { "$ref": "#/$defs/point" }
+        }
+      }
+    },
+    "noShoot": {
+      "description": "The mark a no-shoot on this board carries: lines (the CMA X, the IPSC and USPSA bars) with their stroke on the plan, or two open hands (IDPA).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/point" } }
+        },
+        "width": {
+          "description": "The lines' stroke on the plan, mm of board.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "linecap": {
+          "description": "How the lines end: round for the CMA X; flat (butt) when not given.",
+          "enum": ["round", "square", "butt"]
+        },
+        "hands": {
+          "description": "One open hand in a `box`-unit square (y down, fingers up), drawn twice mirrored about the board's middle, `share` of the board wide each, centred on `middle`: the palm and the thumb as SVG path data (absolute M, L, Q, Z), four fingers as [x, y, width, height] rounded by `fingerRadius`.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["palm", "fingers", "fingerRadius", "thumb", "box", "middle", "share"],
+          "properties": {
+            "palm": { "type": "string" },
+            "fingers": {
+              "type": "array",
+              "items": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } }
+            },
+            "fingerRadius": { "type": "number", "minimum": 0 },
+            "thumb": { "type": "string" },
+            "box": { "type": "number", "exclusiveMinimum": 0 },
+            "middle": { "type": "number" },
+            "share": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      },
+      "oneOf": [{ "required": ["lines", "width"] }, { "required": ["hands"] }]
+    },
+    "source": {
+      "description": "Where the geometry was taken from.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "file"],
+      "properties": {
+        "repo": { "type": "string" },
+        "file": { "type": "string" },
+        "commit": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "point": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+  }
+}

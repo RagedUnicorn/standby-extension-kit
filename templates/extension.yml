@@ -1,0 +1,19 @@
+# Checks the extension on every push and pull request, previews a pull request's changes in the viewer, and
+# releases a tag vX.Y.Z (the version in extension.json) for Standby to install. The steps are the kit's:
+# https://github.com/RagedUnicorn/standby-extension-kit/blob/master/.github/workflows/extension.yml
+name: Extension
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  extension:
+    uses: RagedUnicorn/standby-extension-kit/.github/workflows/extension.yml@master
