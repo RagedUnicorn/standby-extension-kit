@@ -50,8 +50,8 @@ To see your work in Standby itself, link the folder: Settings, Extensions, Link 
 
 1. Make a repository for the extension (public, so Standby installs from it without a token) with its files at the root, a licence and a readme.
 2. Add `.github/workflows/extension.yml` from [templates/extension.yml](templates/extension.yml): it calls this repository's workflow.
-3. Turn on GitHub Pages from the `gh-pages` branch: the viewer and the pull request previews are published there.
-4. To release, set `version` in extension.json, merge, and push the tag `v<version>`.
+3. To release, set `version` in extension.json, merge, and push the tag `v<version>`. The workflow releases `<id>-<version>.zip` and publishes the viewer to the `gh-pages` branch, which the first release (or pull request preview) makes.
+4. Once that branch exists, turn on GitHub Pages from it (Settings, Pages, deploy from the `gh-pages` branch, root): the viewer and the pull request previews are served from there.
 
 Standby offers the release as an update to everyone who has the extension. It never installs an update by itself.
 

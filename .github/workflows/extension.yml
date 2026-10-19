@@ -27,10 +27,10 @@ jobs:
       SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       CLOSED: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: head
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Get the kit
@@ -44,37 +44,13 @@ jobs:
 
       - name: Get the version the pull request changes
         if: github.event_name == 'pull_request' && env.CLOSED != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
       - name: Build the preview
         if: github.event_name == 'pull_request' && env.CLOSED != 'true'
         run: standby-extension site head --base base --out preview
-      - name: Publish the preview
-        if: github.event_name == 'pull_request' && env.CLOSED != 'true' && env.SAME_REPO == 'true'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: preview
-          branch: gh-pages
-          target-folder: pr-${{ github.event.number }}
-      - name: Link the preview
-        if: github.event_name == 'pull_request' && env.CLOSED != 'true' && env.SAME_REPO == 'true'
-        run: |
-          url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-$PR/#/compare"
-          body="The viewer of this pull request, with each changed element before and after in 2D and 3D: $url"
-          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" ||
-            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
-      - name: Remove the preview
-        if: env.CLOSED == 'true' && env.SAME_REPO == 'true'
-        run: |
-          git clone --quiet --depth 1 --branch gh-pages \
-            "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" pages || exit 0
-          cd pages
-          [ -d "pr-$PR" ] || exit 0
-          git rm -r --quiet "pr-$PR"
-          git -c user.name=github-actions -c user.email=github-actions@github.com commit --quiet -m "chore: remove the preview of #$PR"
-          git push --quiet
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -85,12 +61,64 @@ jobs:
             exit 1
           fi
           standby-extension pack head --out dist
-          gh release create "$GITHUB_REF_NAME" dist/*.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          package=$(basename dist/*.zip)
+          # A re-run leaves a package the release already has as it is: Standby may have pinned its sha256.
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" "dist/$package" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          elif ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qxF "$package"; then
+            gh release upload "$GITHUB_REF_NAME" "dist/$package" --repo "$GITHUB_REPOSITORY"
+          fi
           standby-extension site head --out site
-      - name: Publish the viewer
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: site
-          branch: gh-pages
-          clean-exclude: pr-*
+
+      # GitHub Pages serves the gh-pages branch: the viewer of the newest release at its root, and the preview of each
+      # open pull request in pr-<number>/. The first release or preview makes the branch. Written with git, which needs
+      # no checkout at the workspace's root, and tried again if another run moved the branch meanwhile.
+      - name: Update GitHub Pages
+        if: env.SAME_REPO == 'true' && (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            from=site to=. message="publish the viewer of $GITHUB_REF_NAME"
+          elif [ "$CLOSED" = true ]; then
+            from= to="pr-$PR" message="remove the preview of #$PR"
+          else
+            from=preview to="pr-$PR" message="publish the preview of #$PR"
+          fi
+          remote="https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+          for attempt in 1 2 3; do
+            rm -rf pages
+            found=0
+            git ls-remote --exit-code --heads "$remote" gh-pages > /dev/null || found=$?
+            if [ "$found" = 0 ]; then
+              git clone --quiet --depth 1 --branch gh-pages "$remote" pages
+            elif [ "$found" = 2 ] && [ -n "$from" ]; then
+              git init --quiet --initial-branch gh-pages pages
+              git -C pages remote add origin "$remote"
+            elif [ "$found" = 2 ]; then
+              exit 0
+            else
+              exit 1
+            fi
+            if [ "$to" = . ]; then
+              find pages -mindepth 1 -maxdepth 1 ! -name .git ! -name 'pr-*' -exec rm -rf {} +
+            else
+              rm -rf "pages/$to"
+            fi
+            if [ -n "$from" ]; then
+              mkdir -p "pages/$to"
+              cp -R "$from/." "pages/$to/"
+            fi
+            touch pages/.nojekyll
+            git -C pages add --all
+            if git -C pages diff --cached --quiet; then exit 0; fi
+            git -C pages -c user.name=github-actions -c user.email=github-actions@github.com commit --quiet -m "chore: $message"
+            if git -C pages push --quiet origin gh-pages; then exit 0; fi
+            echo "gh-pages moved on meanwhile; trying again ($attempt)"
+          done
+          exit 1
+      - name: Link the preview
+        if: github.event_name == 'pull_request' && env.CLOSED != 'true' && env.SAME_REPO == 'true'
+        run: |
+          url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-$PR/#/compare"
+          body="The viewer of this pull request, with each changed element before and after in 2D and 3D: $url"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" ||
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
