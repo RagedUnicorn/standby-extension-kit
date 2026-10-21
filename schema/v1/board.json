@@ -79,6 +79,26 @@
       },
       "oneOf": [{ "required": ["lines", "width"] }, { "required": ["hands"] }]
     },
+    "holes": {
+      "description": "Holes cut out of the board, such as the IDPA retention target's -0 circle: a circle [x, y, r] or a polygon, mm, each inside the outline. The plan, the PDF and the 3D view show what is behind through them; hard cover paints over them.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "circle": {
+            "description": "Its centre x, y and radius r, mm.",
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "type": "number" }
+          },
+          "points": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/point" } }
+        },
+        "oneOf": [{ "required": ["circle"] }, { "required": ["points"] }]
+      }
+    },
     "source": {
       "description": "Where the geometry was taken from.",
       "type": "object",

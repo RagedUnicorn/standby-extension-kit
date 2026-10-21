@@ -13,7 +13,7 @@ The kit has three parts:
 ```
 extension.json                     the manifest
 elements/<category>/<id>.json      an element (targets, steel, movers, activators, props)
-boards/<id>.json                   a board: a target's outline, hard-cover lines and no-shoot mark
+boards/<id>.json                   a board: a target's outline, hard-cover lines, no-shoot mark and holes
 assets/2d/<id>.svg                 an element's drawing; assets/2d/<id>--<view>.svg its other views
 assets/3d/<id>.glb                 an element's model
 README.md, LICENSE
@@ -33,7 +33,7 @@ Each file names its schema in `$schema`, so an editor checks and completes it: [
 Node 24 or newer. From a release of this repository:
 
 ```
-npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.1.0/standby-extension-kit-0.1.0.tgz view
+npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.2.0/standby-extension-kit-0.2.0.tgz view
 ```
 
 | Command | What it does |
