@@ -217,6 +217,15 @@
         "front": { "type": "number", "minimum": 0 }
       }
     },
+    "cover": {
+      "description": "A prop that hides what is behind it until the shooter opens it, such as a flap over a port: closed at the start, it is opened by hand from a step before the first shot past it and stays open; a mover may list it as its activator. Its model's moving part is the node named `open`, turning about the node's own origin, the hinge, up or down.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "description": "A flap on a hinge.", "enum": ["flap"] }
+      }
+    },
     "carry": {
       "description": "A prop the shooter carries or drags on the clock, such as a kettlebell or a rescue dummy: with how many hands, and whether it is carried off the ground or dragged along it. The round planner and the walkthrough use it.",
       "type": "object",

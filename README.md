@@ -24,8 +24,8 @@ Each file names its schema in `$schema`, so an editor checks and completes it: [
 - **Ids.** An element's id is its file name and never changes once stages use it. A new extension's ids start with its own id (`club.car-door` in extension `club`). The ids of Standby's default extensions are taken.
 - **Drawn by Standby or from files.** `art.kind` is one of Standby's builders (`board`, `trap`, `popper`, `plate`, `swinger`, `updown`, `turner`, `flipper`), which move, carry other targets or take hits and draw from the element's file and the boards. Or it is `asset`: drawn from its files.
 - **Drawings** (`assets/2d/*.svg`) are front views in mm at miniature scale 1: the plan draws them times the stage's miniature scale. The foot point is the bottom centre of the viewBox, or `art.foot`. Only shapes, groups, transforms, fills, strokes, opacity, gradients, clip paths and masks pointing inside the file are kept. Text, images, scripts, styles, links, `<use>` and anything pointing outside the file are refused. Colours are literal.
-- **Models** (`assets/3d/*.glb`) are glTF 2.0 binaries in metres, Y up, the foot point at the origin, facing +Z (the shooter), everything inside the file, 4 MB at most, no Draco or meshopt. A push button's or a pedal's moving part is the node named `press`. Their colours are used as they are: pick them to suit the walkthrough's soft look.
-- **Behaviour** is data: `blocks` (hides what is behind it), `footprint` (walked round), `surfaces` (where something can be put down), `activation` (`step`, `pull`, `press`), `mount` (where a target's face starts), `onSurface` (put down on a prop, it lies on its top).
+- **Models** (`assets/3d/*.glb`) are glTF 2.0 binaries in metres, Y up, the foot point at the origin, facing +Z (the shooter), everything inside the file, 4 MB at most, no Draco or meshopt. A push button's or a pedal's moving part is the node named `press`; a cover's flap is the node named `open`, whose origin is its hinge. Their colours are used as they are: pick them to suit the walkthrough's soft look.
+- **Behaviour** is data: `blocks` (hides what is behind it), `footprint` (walked round), `surfaces` (where something can be put down), `activation` (`step`, `pull`, `press`), `cover` (a prop closed at the start that the shooter opens, such as a flap over a port: `{ "kind": "flap" }`; it hides what is behind it until then, and a mover may list it as its activator), `mount` (where a target's face starts), `onSurface` (put down on a prop, it lies on its top).
 - **A discipline's extension** gives its boards and `stageDefaults`: the board movers and app-made targets take on its stages, and the target a bullet trap carries.
 
 ## The command line
@@ -33,7 +33,7 @@ Each file names its schema in `$schema`, so an editor checks and completes it: [
 Node 24 or newer. From a release of this repository:
 
 ```
-npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.3.0/standby-extension-kit-0.3.0.tgz view
+npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.4.0/standby-extension-kit-0.4.0.tgz view
 ```
 
 | Command | What it does |
