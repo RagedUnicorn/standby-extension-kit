@@ -1,11 +1,11 @@
 # Standby extension kit
 
-Tools for [Standby](https://github.com/RagedUnicorn/standby) element extensions: the targets, steel, movers, activators, props and boards Standby draws on a stage plan, in its PDF briefings and in its 3D walkthrough. Each extension lives in a repository of its own, where its drawings and models are added, fixed and changed. A release publishes a package that Standby installs (Settings, Extensions).
+Tools for [Standby](https://github.com/RagedUnicorn/standby-editor) element extensions: the targets, steel, movers, activators, props and boards Standby draws on a stage plan, in its PDF briefings and in its 3D walkthrough. Each extension lives in a repository of its own, where its drawings and models are added, fixed and changed. A release publishes a package that Standby installs (Settings, Extensions).
 
 The kit has three parts:
 
 - **`standby-extension`**, a command line: checks an extension as its CI does, packs a release, builds the viewer site, serves the viewer on a folder while you work, and starts a new element.
-- **The viewer**: every element of an extension, drawn by Standby's own renderers in 2D (as on the plan, on a 0.1 m grid) and 3D (beside a 1.8 m figure, an arrow showing the way it faces).
+- **The viewer**: every element of an extension, drawn by Standby's own renderers in 2D (as on the plan, on a 0.1 m grid) and 3D (beside the walkthrough's shooter, whom a checkbox hides, an arrow showing the way it faces).
 - **The workflow** an extension repository calls: checks, a viewer preview of each pull request with its changes before and after, and on a tag, a release and the viewer on GitHub Pages.
 
 ## An extension
@@ -33,7 +33,7 @@ Each file names its schema in `$schema`, so an editor checks and completes it: [
 Node 24 or newer. From a release of this repository:
 
 ```
-npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.2.0/standby-extension-kit-0.2.0.tgz view
+npx https://github.com/RagedUnicorn/standby-extension-kit/releases/download/v0.3.0/standby-extension-kit-0.3.0.tgz view
 ```
 
 | Command | What it does |
@@ -54,6 +54,10 @@ To see your work in Standby itself, link the folder: Settings, Extensions, Link 
 4. Once that branch exists, turn on GitHub Pages from it (Settings, Pages, deploy from the `gh-pages` branch, root): the viewer and the pull request previews are served from there.
 
 Standby offers the release as an update to everyone who has the extension. It never installs an update by itself.
+
+## Source
+
+The kit is built from [packages/extension-kit](https://github.com/RagedUnicorn/standby-editor/tree/master/packages/extension-kit) in Standby's repository, with Standby's renderers inside, and this repository's files are copied from there on each kit release. Report issues and open pull requests there.
 
 ## Licence
 
